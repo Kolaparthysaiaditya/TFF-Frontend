@@ -1,24 +1,44 @@
-import logo from './logo.svg';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import './App.css';
+import "@fontsource/great-vibes";
+import { AuthProvider } from "./compleates/common/AuthContext";
+
+import CustomerDashboard from "./compleates/Home/CustomerDashboard";
+import LoginPage from "./compleates/common/LoginPage";
+import AdminDashboard from "./compleates/Admin/AdminDashboard";
+import BranchDashboard from "./compleates/Branch/BranchDashboard";
+import PrivateRoute from "./compleates/common/PraviteRoute";
+import CustomerAuth from "./compleates/Home/CustomerAuth";
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<CustomerDashboard />} />
+          <Route path="/login/" element={<LoginPage />} />
+          <Route path="/CustomerAuth/" element={<CustomerAuth />} />
+
+          <Route
+            path="/AdminDashboard/*"
+            element={
+              <PrivateRoute allowedRoles={["admin"]}>
+                <AdminDashboard />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/BranchDashboard/"
+            element={
+              <PrivateRoute allowedRoles={["branch_manager"]}>
+                <BranchDashboard />
+              </PrivateRoute>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

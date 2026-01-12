@@ -1,0 +1,1 @@
+export const local = {baseURL: "https://tff-backend-1-pigr.onrender.com"}
