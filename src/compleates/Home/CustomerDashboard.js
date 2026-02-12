@@ -328,7 +328,7 @@ function CustomerDashboard() {
                       className={`btn d-flex align-items-center ${foodType === "nonveg" ? "btn-danger" : "btn-outline-danger"}`}
                       onClick={() => setFoodType(foodType === "nonveg" ? "all" : "nonveg")}
                     >
-                      <i className="bi bi-circle-fill me-1"></i> Non-Veg
+                      <i className="bi bi-circle-fill me-1"></i> Non-Veggg
                     </button>
                   </div>
 
@@ -367,7 +367,6 @@ function CustomerDashboard() {
                 <div className="row g-3">
                   {menuItems.length > 0 ? (
                     menuItems.map((item) => (
-                      <h1>hiiii</h1>
                       <FoodCard key={item.id} item={item} branchId={branchId} user={user} />
                     ))
                   ) : (
