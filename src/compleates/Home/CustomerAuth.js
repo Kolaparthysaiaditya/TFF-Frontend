@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { local } from "../../Utilies/common";
+import api from "../../api/axios"
 import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import bgVideo from "../../videos/login-bg2.mp4"
@@ -39,7 +39,7 @@ const CustomerAuth = () => {
         setError("");
 
         try {
-            const res = await axios.post(`${local.baseURL}/TFF/customer/login/`, {
+            const res = await api.post(`/TFF/customer/login/`, {
                 phone: formData.phone,
                 password: formData.password,
             });
@@ -67,7 +67,7 @@ const CustomerAuth = () => {
         setError("");
 
         try {
-            await axios.post(`${local.baseURL}/TFF/customer/register/`, formData);
+            await api.post(`/TFF/customer/register/`, formData);
             setIsLogin(true);
         } catch {
             setError("Registration failed");

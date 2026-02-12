@@ -7,8 +7,10 @@ import CustomerDashboard from "./compleates/Home/CustomerDashboard";
 import LoginPage from "./compleates/common/LoginPage";
 import AdminDashboard from "./compleates/Admin/AdminDashboard";
 import BranchDashboard from "./compleates/Branch/BranchDashboard";
+import ChefDashboard from "./compleates/Chef/ChefDashboard";
 import PrivateRoute from "./compleates/common/PraviteRoute";
 import CustomerAuth from "./compleates/Home/CustomerAuth";
+import GetLatLng from "./compleates/GetLatLng";
 
 function App() {
   return (
@@ -36,6 +38,18 @@ function App() {
               </PrivateRoute>
             }
           />
+
+          <Route
+            path="/ChefDashboard/*"
+            element={
+              <PrivateRoute allowedRoles={["chef"]}>
+                <ChefDashboard />
+              </PrivateRoute>
+            }
+          />
+
+          <Route path="/getlat/" element={<GetLatLng />}/>
+
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import api from "../../api/axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const Branches = () => {
@@ -34,7 +35,7 @@ const Branches = () => {
 
   // ================= FETCH =================
   const fetchBranches = async () => {
-    const res = await axios.get("/TFF/branches/active/");
+    const res = await api.get("/TFF/branches/active/");
     setBranches(res.data);
   };
 
@@ -75,15 +76,14 @@ const Branches = () => {
 
   const handleSave = async () => {
     try {
-      let res;
 
       if (isEdit) {
-        res = await axios.put(
+        await api.put(
           `/TFF/branches/${editingId}/update/`,
           formData
         );
       } else {
-        res = await axios.post("/TFF/branches/create/", formData);
+        await api.post("/TFF/branches/create/", formData);
       }
 
       setShowAddModal(false);
@@ -91,7 +91,7 @@ const Branches = () => {
       setEditingId(null);
 
       // 🔥 REFRESH LIST
-      const listRes = await axios.get("/TFF/branches/active/");
+      const listRes = await api.get("/TFF/branches/active/");
       setBranches(listRes.data);
 
       // 🔥 UPDATE DETAILS VIEW IF OPEN
@@ -142,7 +142,7 @@ const Branches = () => {
 
   const assign = async (empId) => {
     try {
-      const res = await axios.post("/TFF/staff/assign/", {
+      const res = await api.post("/TFF/staff/assign/", {
         employee_id: empId,
         target_branch_id: selectedBranch.id,
       });
@@ -155,7 +155,7 @@ const Branches = () => {
 
       await fetchBranches();
 
-      const resBranches = await axios.get("/TFF/branches/active/");
+      const resBranches = await api.get("/TFF/branches/active/");
       setSelectedBranch(resBranches.data.find(b => b.id === selectedBranch.id));
     } catch (err) {
       alert(err.response?.data?.error || "Failed to assign staff");

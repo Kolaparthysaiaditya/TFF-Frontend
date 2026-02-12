@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { local } from "../../Utilies/common";
+import api from "../../api/axios"
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 
@@ -9,8 +9,8 @@ const Employees = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
 
   useEffect(() => {
-    axios
-      .get(`${local.baseURL}/TFF/Employee-list/`)
+    api
+      .get(`/TFF/Employee-list/`)
       .then((res) => setEmployees(res.data))
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
@@ -91,7 +91,7 @@ const Employees = () => {
 
               <div className="d-flex align-items-center mb-4">
                 <img
-                  src={selectedEmployee.profile_pic?.replace('127.0.0.1', local.ip) || "/default-user.png"}
+                  src={selectedEmployee.profile_pic || "/default-user.png"}
                   alt={selectedEmployee.username}
                   className="rounded-circle me-4"
                   width="100"

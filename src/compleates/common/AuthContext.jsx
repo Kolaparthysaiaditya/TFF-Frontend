@@ -19,12 +19,25 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = (data) => {
-    localStorage.setItem("access_token", data.tokens.access);
-    localStorage.setItem("refresh_token", data.tokens.refresh);
-    localStorage.setItem("user", JSON.stringify(data.user)); // ✅ persist user
+    // If your backend returns: { access: "...", refresh: "...", user: {...} }
+    const access = data.access || data.tokens?.access;
+    const refresh = data.refresh || data.tokens?.refresh;
+
+    if (!access || !refresh) {
+      console.error("No access/refresh token found!");
+      return;
+    }
+
+    // Save tokens in localStorage
+    localStorage.setItem("access_token", access);
+    localStorage.setItem("refresh_token", refresh);
+
+    // Save user info
+    localStorage.setItem("user", JSON.stringify(data.user));
 
     setUser(data.user);
   };
+
 
   const logout = () => {
     localStorage.clear();

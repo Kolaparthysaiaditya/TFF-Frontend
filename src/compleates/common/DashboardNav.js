@@ -5,7 +5,7 @@ import "@fontsource/great-vibes";
 import "../../css/dashboard.css";
 import Stamp from "../../images/stamp-white.png"
 
-function DashboardNav({ toggleSidebar }) {
+function DashboardNav({ toggleSidebar, branchName, user }) {
 
   const logout = async () => {
     const userStr = localStorage.getItem("user");
@@ -13,16 +13,16 @@ function DashboardNav({ toggleSidebar }) {
     const user = JSON.parse(userStr);
     const Eid = user.id;
     console.log("Logging out user ID:", Eid);
-  
+
     try {
       await axios.post("/TFF/customer/logout/", { Eid: Eid });
       console.log("Logged out successfully");
     } catch (err) {
       console.error("Logout failed", err);
     }
-  
+
     localStorage.clear();
-    window.location.href = "/";
+    window.location.href = "/login/";
   };
 
   return (
@@ -49,12 +49,20 @@ function DashboardNav({ toggleSidebar }) {
         <h1 className="brand-title mb-0">The Food Forest</h1>
 
         {/* Logout – desktop */}
-        <button
-          className="btn btn-danger d-none d-md-block"
-          onClick={logout}
-        >
-          <i className="bi bi-box-arrow-right me-1"></i> Logout
-        </button>
+        <div className="d-none d-md-block">
+          <p className="text-light m-0 mb-1 fs-6 text-end">
+            <b>Branch:</b> {branchName}
+          </p>
+          <div className="d-flex justify-content-between gap-3">
+            <p className="text-white m-auto float-start"><b>E-Id :</b> {user?.eid}</p>
+            <button
+              className="btn btn-danger float-end"
+              onClick={logout}
+            >
+              <i className="bi bi-box-arrow-right me-1"></i> Logout
+            </button>
+          </div>
+        </div>
       </div>
     </nav>
   );

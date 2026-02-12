@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { local } from "../../Utilies/common";
+import api from "../../api/axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import logo from "../../images/stamp-white.png";
@@ -37,7 +37,7 @@ function LoginPage() {
         setLoading(true);
 
         try {
-            const res = await axios.post(`${local.baseURL}/TFF/login/`, formData);
+            const res = await api.post(`/TFF/login/`, formData);
             login(res.data);
 
             // 🔁 Role-based redirect
@@ -45,7 +45,10 @@ function LoginPage() {
                 navigate("/AdminDashboard/");
             } else if (res.data.user.role === "branch_manager") {
                 navigate("/BranchDashboard/");
+            } else if (res.data.user.role === "chef") {
+                navigate("/ChefDashboard/")
             } else {
+                alert("your not abile to this page")
                 navigate("/");
             }
         } catch (err) {

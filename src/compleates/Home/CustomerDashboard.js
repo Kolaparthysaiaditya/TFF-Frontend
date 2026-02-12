@@ -1,10 +1,12 @@
-import axios from "axios";
-import { local } from "../../Utilies/common";
+import api from "../../api/axios"
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../css/dashboard.css";
 import Stamp from "../../images/stamp-white.png";
 import FoodCard from "../common/FoodCard";
+import CartPage from "./CartPage";
+import CurrentOrders from "./CurrentOrders";
+import OrderHistory from "./OrderHistory";
 
 const getUser = () => {
   const user = localStorage.getItem("user");
@@ -14,13 +16,13 @@ const getUser = () => {
 const logout = async () => {
   const userStr = localStorage.getItem("user");
   if (!userStr) return;
+
   const user = JSON.parse(userStr);
-  const customerId = user.id;
-  console.log("Logging out user ID:", customerId);
 
   try {
-    await axios.post(`${local.baseURL}/TFF/customer/logout/`, { customer_id: customerId });
-    console.log("Logged out successfully");
+    await api.post(`/TFF/customer/logout/`, {
+      customer_id: user?.id
+    });
   } catch (err) {
     console.error("Logout failed", err);
   }
@@ -28,6 +30,7 @@ const logout = async () => {
   localStorage.clear();
   window.location.href = "/";
 };
+
 
 const useDetectBranch = () => {
   const [branchName, setBranchName] = useState("Detect Branch");
@@ -59,8 +62,9 @@ const useDetectBranch = () => {
         console.log("Detected coords:", latitude, longitude);
 
         try {
-          const res = await axios.get(
-            `${local.baseURL}/TFF/nearest-branch/?lat=${latitude}&lon=${longitude}`
+          console.log("hello", api)
+          const res = await api.get(
+            `TFF/nearest-branch/?lat=${latitude}&lon=${longitude}`
           );
 
           if (res.data?.branch_name) {
@@ -101,15 +105,8 @@ const useDetectBranch = () => {
 };
 
 /* ================= Navbar ================= */
-function Nav({ toggleSidebar }) {
+function Nav({ toggleSidebar, branchName, user }) {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    setUser(getUser());
-  }, []);
-
-  const { branchName } = useDetectBranch();
 
 
 
@@ -142,7 +139,7 @@ function Nav({ toggleSidebar }) {
 
           {user ? (
             <div className="mt-1 d-flex">
-              <small className="opacity-75 m-auto me-2">{user.name}</small>
+              <small className="opacity-75 m-auto me-2">{user?.name}</small>
               <button
                 className="btn btn-outline-danger p-1 px-2 text-decoration-none"
                 onClick={logout}
@@ -166,14 +163,13 @@ function Nav({ toggleSidebar }) {
 }
 
 /* ================= Sidebar ================= */
-function CustomerSidebar({ setDisplay, currentSection, isOpen, closeSidebar }) {
+function CustomerSidebar({ setDisplay, currentSection, isOpen, closeSidebar, branchName, user }) {
   const navigate = useNavigate();
-  const user = getUser();
-  const { branchName } = useDetectBranch();
 
   const navItems = [
     { key: "menu", icon: "bi bi-journal-text", label: "Menu" },
     { key: "currentOrder", icon: "bi bi-clock-history", label: "Current Order" },
+    { key: "cart", icon: "bi bi-cart-fill", label: "Cart"},
     { key: "myOrders", icon: "bi bi-bag-check", label: "My Orders" },
     { key: "reviews", icon: "bi bi-star-fill", label: "My Reviews" },
     { key: "bills", icon: "bi bi-receipt", label: "My Bills" },
@@ -205,7 +201,7 @@ function CustomerSidebar({ setDisplay, currentSection, isOpen, closeSidebar }) {
         {user && (
           <div className="d-flex">
             <small className="opacity-75 mt-auto">User:</small>
-            <div className="fw-semibold ms-2">{user.name}</div>
+            <div className="fw-semibold ms-2">{user?.username}</div>
           </div>
         )}
 
@@ -235,15 +231,19 @@ function CustomerDashboard() {
   const [foodType, setFoodType] = useState("all");
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const user = JSON.parse(localStorage.getItem("user"))
 
   const {
     branchId,
+    branchName,
+    loading,
+    detectBranch
   } = useDetectBranch();
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get(`${local.baseURL}/TFF/menu/categories/`);
+        const res = await api.get(`/TFF/menu/categories/`);
         setCategoryOptions(["all", ...res.data]); // prepend 'all'
       } catch (err) {
         console.error("Failed to load categories", err);
@@ -260,7 +260,7 @@ function CustomerDashboard() {
         };
         if (branchId) params.branch_id = branchId; // only add branch_id if available
 
-        const res = await axios.get(`${local.baseURL}/TFF/branch/menu/`, { params });
+        const res = await api.get(`/TFF/branch/menu/`, { params });
         setMenuItems(res.data);
       } catch (err) {
         console.error("Menu fetch error", err);
@@ -276,7 +276,7 @@ function CustomerDashboard() {
   return (
     <div className="bg-light min-vh-100">
       {/* Navbar */}
-      <Nav toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <Nav toggleSidebar={() => setSidebarOpen(!sidebarOpen)} branchName={branchName} user={user} />
 
       <div className="container-fluid mt-5 pt-5">
         <div className="row">
@@ -287,6 +287,8 @@ function CustomerDashboard() {
               currentSection={display}
               isOpen={true}
               closeSidebar={() => setSidebarOpen(false)}
+              branchName={branchName}
+              user={user}
             />
           </div>
 
@@ -365,7 +367,7 @@ function CustomerDashboard() {
                 <div className="row g-3">
                   {menuItems.length > 0 ? (
                     menuItems.map((item) => (
-                      <FoodCard key={item.id} item={item} />
+                      <FoodCard key={item.id} item={item} branchId={branchId} user={user} />
                     ))
                   ) : (
                     <p className="text-muted">No items available for this branch</p>
@@ -375,17 +377,13 @@ function CustomerDashboard() {
             )}
 
             {display === "currentOrder" && (
-              <div className="card shadow-sm">
-                <div className="card-header fw-semibold">Current Order</div>
-                <div className="card-body">Your order is being prepared 🍳</div>
-              </div>
+              < CurrentOrders user={user}/>
             )}
 
+            {display === "cart" && ( <CartPage user={user} Bid={branchId}/> )}
+
             {display === "myOrders" && (
-              <div className="card shadow-sm">
-                <div className="card-header fw-semibold">My Orders</div>
-                <div className="card-body">Order history here</div>
-              </div>
+              <OrderHistory customerId={user?.id}/>
             )}
 
             {display === "reviews" && (

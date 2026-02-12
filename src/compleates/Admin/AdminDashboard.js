@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { local } from "../../Utilies/common";
+import api, { BACKEND_URL } from "../../api/axios"
 import "../../css/dashboard.css";
+import Itemalt from "../../images/item-alt.png";
 import DashboardNav from "../common/DashboardNav";
 import FoodCard from "../common/FoodCard";
 import ToggleSwitch from "../common/ToggleSwitch";
@@ -9,6 +10,10 @@ import FormatIndianNumber from "../../Utilies/FormatIndianNumber";
 import Branches from "./Branches";
 import Employess from "./Employess";
 import ProfilePage from "../../Utilies/ProfilePage";
+import Offers from "./Offers";
+import GodownItems from "./GodownItems";
+import AllBranchessStocks from "./AllBranchessStocks";
+import Summery from "./Summery";
 
 /* ================= Sidebar ================= */
 function Sidebar({ setDisplay, currentSection, isOpen, closeSidebar }) {
@@ -17,7 +22,10 @@ function Sidebar({ setDisplay, currentSection, isOpen, closeSidebar }) {
     { key: "branches", icon: "bi bi-diagram-3", label: "Branches" },
     { key: "employees", icon: "bi bi-people-fill", label: "Employees" },
     { key: "menuitems", icon: "bi bi-list-ul", label: "Menu Items" },
-    { key: "reports", icon: "bi bi-file-earmark-text", label: "Reports" },
+    { key: "offers", icon: "bi bi-person-fill", label: "Offers" },
+    { key: "godown", icon: "bi bi-box2-fill", label: "Godown Stock" },        // ✅ New
+    { key: "branch_stock", icon: "bi bi-building", label: "Branch Stock" },
+    { key: "reports", icon: "bi bi-file-earmark-text", label: "Sammury Reports" },
     { key: "profile", icon: "bi bi-person-fill", label: "Profile" },
   ];
 
@@ -85,7 +93,10 @@ function AdminDashboard() {
   const [foodType, setFoodType] = useState("all");
   const [display, setDisplay] = useState("home");
   const [menuItems, setMenuItems] = useState([]);
+  const [todayOffer, setTodayOffer] = useState([]);
   const [status, setStatus] = useState("all");
+  const user = JSON.parse(localStorage.getItem("user"));
+  const [godownStock, setGodownStock] = useState([]);
   const options = [
     { label: "Act", value: "act", colorClass: "btn-success" },
     { label: "All", value: "all", colorClass: "btn-warning" },
@@ -93,30 +104,55 @@ function AdminDashboard() {
   ];
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const branchSales = {
-    branchName: "Bangalore Central",
-    managerName: "Rahul Sharma",
-    monthlySales: [
-      { month: "Mar", value: 30000 },
-      { month: "Sep", value: 35000 },
-      { month: "Dec", value: 45000 },
-    ],
-  };
-  // Today Offer Data
-  const todayOffer = {
-    dishName: "Paneer Butter Masala",
-    dishImage:
-      "https://i0.wp.com/smithakalluraya.com/wp-content/uploads/2019/07/paneer-butter-masala-recipe.jpg?fit=1500%2C2161&ssl=1",
-    offerPercent: 70,
-    offerDescription: "Today offer is 70% off on panner butter masala items!",
-  };
-
+  const [leadingBranch, setLeadingBranch] = useState(null);
   const [counts, setCounts] = useState({
     branches: 0,
     employees: 0,
     godowns: 0,
     orders: 0,
   });
+
+  const fetchTodayOffer = async () => {
+    try {
+      const res = await api.get("/TFF/today/offer/");
+      console.log("hsjj", res.data)
+      setTodayOffer(res.data[0] || null);
+    } catch (err) {
+      console.error("Today offer fetch error", err);
+      setTodayOffer(null);
+    }
+  };
+  const fetchLeadingBranch = async () => {
+    try {
+      const res = await api.get("/TFF/branches/leading/");
+      setLeadingBranch(res.data);
+    } catch (err) {
+      console.error("Failed to fetch leading branch:", err);
+      setLeadingBranch(null);
+    }
+  };
+
+  useEffect(() => {
+    fetchTodayOffer()
+    fetchLeadingBranch()
+  }, [])
+
+  // fetch godown stock
+  const fetchGodownStock = async () => {
+    try {
+      const res = await api.get("/TFF/godown/stock/");
+      setGodownStock(res.data);
+    } catch (err) {
+      console.error("Godown fetch error", err);
+      setGodownStock([]);
+    }
+  };
+
+  // Call these on mount or when sidebar switches
+  useEffect(() => {
+    if (display === "godown") fetchGodownStock();
+  }, [display]);
+
 
   useEffect(() => {
     // Function to fetch menu items
@@ -135,18 +171,17 @@ function AdminDashboard() {
         }
         // status === "all" → don't send is_active
 
-        const res = await axios.get(`${local.baseURL}/TFF/admin/menu/`, { params });
+        const res = await api.get(`/TFF/admin/menu/`, { params });
         setMenuItems(res.data);
       } catch (err) {
         console.error("Menu fetch error", err);
         setMenuItems([]);
       }
     };
-
     // Function to fetch dashboard counts
     const fetchCounts = async () => {
       try {
-        const res = await axios.get('/TFF/dashboard-counts/'); // ✅ absolute path
+        const res = await api.get('/TFF/dashboard-counts/'); // ✅ absolute path
         const data = res.data.data;
         setCounts({
           branches: Number(data.branches),
@@ -163,6 +198,7 @@ function AdminDashboard() {
 
     fetchCounts();
     fetchMenu();
+    fetchTodayOffer();
   }, [search, foodType, status]); // only depends on search & foodType
 
   const logout = async () => {
@@ -171,21 +207,21 @@ function AdminDashboard() {
     const user = JSON.parse(userStr);
     const Eid = user.eid;
     console.log("Logging out user ID:", Eid);
-  
+
     try {
-      await axios.post("/TFF/customer/logout/", { Eid: Eid });
+      await api.post("/TFF/customer/logout/", { Eid: Eid });
       console.log("Logged out successfully");
     } catch (err) {
       console.error("Logout failed", err);
     }
-  
+
     localStorage.clear();
     window.location.href = "/";
   };
 
   return (
     <div className="bg-light min-vh-100">
-      <DashboardNav toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <DashboardNav toggleSidebar={() => setSidebarOpen(!sidebarOpen)} user={user} />
 
       <div className="container-fluid">
         <div className="row">
@@ -252,158 +288,127 @@ function AdminDashboard() {
                   />
 
                   {/* Today's Offer Card (Admin View) */}
-                  <div className="col-sm-12 col-lg-6">
+                  <div className="col-sm-12 col-lg-6" onClick={() => setDisplay("offers")} >
                     <div
                       className="card shadow-sm text-white overflow-hidden"
                       style={{ minHeight: "260px" }}
                     >
-                      <div
-                        className="position-relative w-100"
-                        style={{
-                          minHeight: "340px",
-                          backgroundImage: `url(${todayOffer.dishImage})`,
-                          backgroundSize: "cover",
-                          backgroundPosition: "center",
-                        }}
-                      >
-                        {/* Dark overlay */}
+                      {todayOffer ? (
                         <div
-                          className="position-absolute top-0 start-0 w-100 h-100"
-                          style={{ background: "rgba(0,0,0,0.35)" }}
-                        ></div>
-
-                        {/* Offer label */}
-                        <span
-                          className="badge rounded-pill position-absolute top-0 start-0 m-2 fs-5"
-                          style={{ zIndex: 2 }}
-                        >
-                          TODAY OFFER
-                        </span>
-
-                        {/* Offer % */}
-                        <span
-                          className="badge rounded-pill position-absolute top-0 end-0 m-2 p-3 "
-                          style={{ background: "rgba(220,184,6,0.6)", zIndex: 2 }}
-                        >
-                          {todayOffer.offerPercent}% OFF
-                        </span>
-
-                        {/* Bottom content */}
-                        <div
-                          className="position-absolute bottom-0 start-0 w-100 p-3"
+                          className="position-relative w-100"
                           style={{
-                            zIndex: 2,
-                            background:
-                              "linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0))",
+                            minHeight: "340px",
+                            backgroundImage: `url(${BACKEND_URL}${todayOffer.image})`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
                           }}
                         >
-                          <h5 className="fw-bold fs-4 mb-2"><i>{todayOffer.dishName}</i></h5>
-                          <p className="mb-3 fs-6 small">{todayOffer.offerDescription}</p>
+                          {/* Dark overlay */}
+                          <div
+                            className="position-absolute top-0 start-0 w-100 h-100"
+                            style={{ background: "rgba(0,0,0,0.35)" }}
+                          ></div>
+
+                          {/* Offer label */}
+                          <span
+                            className="badge rounded-pill position-absolute top-0 start-0 m-2 fs-5"
+                            style={{ zIndex: 2 }}
+                          >
+                            TODAY OFFER
+                          </span>
+
+                          {/* Offer % */}
+                          <span
+                            className="badge rounded-pill position-absolute top-0 end-0 m-2 p-3 "
+                            style={{ background: "rgba(220,184,6,0.6)", zIndex: 2 }}
+                          >
+                            {todayOffer.display_text}
+                          </span>
+
+                          {/* Bottom content */}
+                          <div
+                            className="position-absolute bottom-0 start-0 w-100 p-3"
+                            style={{
+                              zIndex: 2,
+                              background:
+                                "linear-gradient(to top, rgba(50, 77, 91, 0.85), rgba(25, 27, 26, 0.12))",
+                            }}
+                          >
+                            <h5 className="fw-bold fs-4 mb-2"><i>{todayOffer.item_name}</i></h5>
+                            <p className="mb-3 fs-6 small">{todayOffer.item_description}</p>
+                          </div>
                         </div>
-                      </div>
+                      ) :
+                        (<p className="text-dark">no order</p>)
+                      }
                     </div>
                   </div>
 
 
+                  {/* Leading Branch */}
                   {/* Leading Branch */}
                   <div className="col-sm-12 col-lg-6">
                     <div className="card shadow-sm h-100">
                       <div className="card-body">
                         <h5 className="fw-bold mb-3">Leading Branch</h5>
 
-                        <div className="row mb-4">
-                          <div className="col-6">
-                            <p className="mb-1">
-                              <strong>Branch:</strong> <i>{branchSales.branchName}</i>
-                            </p>
-                            <p className="mb-0">
-                              <strong>Manager:</strong> <i>{branchSales.managerName}</i>
-                            </p>
-                          </div>
-
-                          <div className="col-6 text-end">
-                            <span className="badge bg-success fs-6">
-                              ₹
-                              {FormatIndianNumber(
-                                branchSales.monthlySales[
-                                  branchSales.monthlySales.length - 1
-                                ].value
-                              )}
-                            </span>
-                            <div className="small text-muted">This Month</div>
-                          </div>
-                        </div>
-
-                        {/* Dynamic progress bars (latest month first) */}
-                        {branchSales.monthlySales.map((_, i) => {
-                          const index =
-                            branchSales.monthlySales.length - 1 - i;
-                          const item = branchSales.monthlySales[index];
-
-                          const salesValues = branchSales.monthlySales.map(
-                            (s) => s.value
-                          );
-                          const maxSale = Math.max(...salesValues);
-                          const minSale = Math.min(...salesValues);
-
-                          const percent = (item.value / maxSale) * 100;
-
-                          const prevIndex = index > 0 ? index - 1 : null;
-                          const prevValue =
-                            prevIndex !== null
-                              ? branchSales.monthlySales[prevIndex].value
-                              : null;
-                          const changePercent =
-                            prevValue !== null
-                              ? ((item.value - prevValue) / prevValue) * 100
-                              : null;
-
-                          // Bar color logic
-                          let barClass = "bg-primary"; // default middle
-                          if (changePercent !== null && changePercent < 0) {
-                            barClass = "bg-danger"; // negative change
-                          } else if (item.value === maxSale) {
-                            barClass = "bg-success";
-                          } else if (item.value === minSale) {
-                            barClass = "bg-warning";
-                          }
-
-                          return (
-                            <div key={index} className="mb-3">
-                              <div className="d-flex justify-content-between">
-                                <span className="fw-semibold">{item.month}</span>
-                                <span className="text-muted">
-                                  ₹{FormatIndianNumber(item.value)}
-                                  {changePercent !== null && (
-                                    <span
-                                      className={`ms-2 ${changePercent > 0
-                                        ? "text-success"
-                                        : changePercent < 0
-                                          ? "text-danger"
-                                          : "text-muted"
-                                        }`}
-                                    >
-                                      {changePercent > 0 ? "+" : ""}
-                                      {changePercent.toFixed(1)}%
-                                    </span>
-                                  )}
-                                </span>
+                        {leadingBranch ? (
+                          <>
+                            <div className="row mb-4">
+                              <div className="col-6">
+                                <p className="mb-0">
+                                  <strong>Manager:</strong> <i>{leadingBranch.branch_manager}</i>
+                                </p>
+                                <p className="mb-1">
+                                  <strong>Branch:</strong> <i>{leadingBranch.branch_name}</i>
+                                </p>
+                                <p className="mb-0">
+                                  <strong>Code:</strong> <i>{leadingBranch.branch_code}</i>
+                                </p>
                               </div>
-                              <div
-                                className="progress bg-secondary rounded-5"
-                                style={{ height: "2vh" }}
-                              >
-                                <div
-                                  className={`progress-bar ${barClass} rounded-5`}
-                                  style={{ width: `${percent}%` }}
-                                ></div>
+
+                              <div className="col-6 text-end">
+                                <span className="badge bg-success fs-6">
+                                  ₹{FormatIndianNumber(leadingBranch.current_month_sales)}
+                                </span>
+                                <div className="small text-muted">
+                                  {leadingBranch.current_month_name}
+                                </div>
                               </div>
                             </div>
-                          );
-                        })}
+
+                            {/* Dynamic progress bars */}
+                            {[leadingBranch.previous_month_sales, leadingBranch.current_month_sales].map((value, i) => {
+                              const monthName = i === 0 ? leadingBranch.previous_month_name : leadingBranch.current_month_name;
+                              const maxSale = Math.max(leadingBranch.previous_month_sales, leadingBranch.current_month_sales);
+                              const minSale = Math.min(leadingBranch.previous_month_sales, leadingBranch.current_month_sales);
+
+                              let barClass = "bg-primary";
+                              if (value === maxSale) barClass = "bg-success";
+                              else if (value === minSale) barClass = "bg-warning";
+
+                              const percent = (value / maxSale) * 100;
+
+                              return (
+                                <div key={i} className="mb-3">
+                                  <div className="d-flex justify-content-between">
+                                    <span className="fw-semibold">{monthName}</span>
+                                    <span className="text-muted">₹{FormatIndianNumber(value)}</span>
+                                  </div>
+                                  <div className="progress bg-secondary rounded-5" style={{ height: "2vh" }}>
+                                    <div className={`progress-bar ${barClass} rounded-5`} style={{ width: `${percent}%` }}></div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </>
+                        ) : (
+                          <p className="text-muted">Loading leading branch...</p>
+                        )}
                       </div>
                     </div>
                   </div>
+
                 </div>
               ))}
 
@@ -449,7 +454,7 @@ function AdminDashboard() {
                         />
                       </div>
 
-                      
+
 
                       {/* Search */}
                       <div className="col-12 col-md-5  col-lg-4">
@@ -493,12 +498,24 @@ function AdminDashboard() {
               </>
             )}
 
+            {display === "offers" && (
+              <div>
+                <Offers eid={user?.eid} />
+              </div>
+            )}
+            {display === "godown" && (
+              <GodownItems godownStock={godownStock} />
+            )}
+
+
+            {display === "branch_stock" && (
+              < AllBranchessStocks />
+            )}
+
+
             {/* REPORTS */}
             {display === "reports" && (
-              <div className="card shadow-sm">
-                <div className="card-header fw-semibold">Reports</div>
-                <div className="card-body">Reports content here</div>
-              </div>
+              <Summery />
             )}
 
             {/* PROFILE */}
