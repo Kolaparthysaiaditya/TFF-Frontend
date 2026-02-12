@@ -367,6 +367,7 @@ function CustomerDashboard() {
                 <div className="row g-3">
                   {menuItems.length > 0 ? (
                     menuItems.map((item) => (
+                      <h1>hiiii</h1>
                       <FoodCard key={item.id} item={item} branchId={branchId} user={user} />
                     ))
                   ) : (
