@@ -1,6 +1,5 @@
 import axios from "axios";
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import "@fontsource/great-vibes";
 import "../../css/dashboard.css";
 import Stamp from "../../images/stamp-white.png"

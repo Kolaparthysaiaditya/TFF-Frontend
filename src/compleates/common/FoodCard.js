@@ -4,7 +4,6 @@ import { useState } from "react";
 
 export default function FoodCard({ item, branchId, user }) {
   const [loading, setLoading] = useState(false);
-  const [quantity, setQuantity] = useState(1);
   
 
   const imageUrl = item.image
