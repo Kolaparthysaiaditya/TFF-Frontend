@@ -328,7 +328,7 @@ function CustomerDashboard() {
                       className={`btn d-flex align-items-center ${foodType === "nonveg" ? "btn-danger" : "btn-outline-danger"}`}
                       onClick={() => setFoodType(foodType === "nonveg" ? "all" : "nonveg")}
                     >
-                      <i className="bi bi-circle-fill me-1"></i> Non-Veg
+                      <i className="bi bi-circle-fill me-1"></i> Non-Veggg
                     </button>
                   </div>
 
