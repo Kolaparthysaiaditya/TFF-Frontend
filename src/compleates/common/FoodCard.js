@@ -4,11 +4,6 @@ import { useState } from "react";
 
 export default function FoodCard({ item, branchId, user }) {
   const [loading, setLoading] = useState(false);
-  
-
-  const imageUrl = item.image
-    ? `${BACKEND_URL}${item.image}`
-    : "/no-image.png";
 
   const handleAddToCart = async () => {
     if (!user) {
@@ -43,7 +38,7 @@ export default function FoodCard({ item, branchId, user }) {
         {/* Image */}
         <div className="position-relative">
           <img
-            src={imageUrl}
+            src={`${BACKEND_URL}${item.image}`}
             alt={item.name}
             className="card-img-top rounded-top-4"
             style={{ height: "180px", objectFit: "cover" }}
